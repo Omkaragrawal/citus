@@ -52,6 +52,8 @@ NOTICE:  not propagating CREATE ROLE/USER commands to worker nodes
 HINT:  Connect to worker nodes directly to manually create all necessary users and roles.
 GRANT some_role TO full_access;
 GRANT some_role TO read_access;
+-- allow full_access to call monitoring functions as well
+GRANT pg_monitor TO full_access;
 GRANT ALL ON TABLE test TO full_access;
 GRANT SELECT ON TABLE test TO read_access;
 CREATE SCHEMA full_access_user_schema;
@@ -73,6 +75,7 @@ NOTICE:  not propagating CREATE ROLE/USER commands to worker nodes
 HINT:  Connect to worker nodes directly to manually create all necessary users and roles.
 GRANT some_role TO full_access;
 GRANT some_role TO read_access;
+GRANT pg_monitor TO full_access;
 GRANT ALL ON TABLE test_1420000 TO full_access;
 GRANT SELECT ON TABLE test_1420000 TO read_access;
 GRANT ALL ON TABLE test_1420002 TO full_access;
@@ -95,6 +98,7 @@ NOTICE:  not propagating CREATE ROLE/USER commands to worker nodes
 HINT:  Connect to worker nodes directly to manually create all necessary users and roles.
 GRANT some_role TO full_access;
 GRANT some_role TO read_access;
+GRANT pg_monitor TO full_access;
 GRANT ALL ON TABLE test_1420001 TO full_access;
 GRANT SELECT ON TABLE test_1420001 TO read_access;
 GRANT ALL ON TABLE test_1420003 TO full_access;
@@ -163,6 +167,17 @@ SELECT task_tracker_assign_task(1, 1, 'SELECT 1');
 --------------------------
  
 (1 row)
+
+-- monitor user can call monitoring functions
+SELECT true FROM get_all_active_transactions();
+ bool 
+------
+(0 rows)
+
+SELECT true FROM get_global_active_transactions();
+ bool 
+------
+(0 rows)
 
 -- check read permission
 SET ROLE read_access;
@@ -280,6 +295,11 @@ ERROR:  permission denied for relation test
 ABORT;
 SELECT * FROM citus_stat_statements_reset();
 ERROR:  permission denied for function citus_stat_statements_reset
+-- regular users cannot call monitoring functions
+SELECT true FROM get_all_active_transactions();
+ERROR:  permission denied for function get_all_active_transactions
+SELECT true FROM get_global_active_transactions();
+ERROR:  permission denied for function get_global_active_transactions
 -- should not be allowed to upgrade to reference table
 SELECT upgrade_to_reference_table('singleshard');
 ERROR:  must be owner of relation singleshard

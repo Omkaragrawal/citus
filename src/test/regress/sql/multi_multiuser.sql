@@ -33,6 +33,9 @@ CREATE ROLE some_role;
 GRANT some_role TO full_access;
 GRANT some_role TO read_access;
 
+-- allow full_access to call monitoring functions as well
+GRANT pg_monitor TO full_access;
+
 GRANT ALL ON TABLE test TO full_access;
 GRANT SELECT ON TABLE test TO read_access;
 
@@ -49,6 +52,7 @@ CREATE USER no_access;
 CREATE ROLE some_role;
 GRANT some_role TO full_access;
 GRANT some_role TO read_access;
+GRANT pg_monitor TO full_access;
 
 GRANT ALL ON TABLE test_1420000 TO full_access;
 GRANT SELECT ON TABLE test_1420000 TO read_access;
@@ -67,6 +71,7 @@ CREATE USER no_access;
 CREATE ROLE some_role;
 GRANT some_role TO full_access;
 GRANT some_role TO read_access;
+GRANT pg_monitor TO full_access;
 
 GRANT ALL ON TABLE test_1420001 TO full_access;
 GRANT SELECT ON TABLE test_1420001 TO read_access;
@@ -116,6 +121,10 @@ COPY "postgresql.conf" TO STDOUT WITH (format transmit);
 
 -- create a task that other users should not be able to inspect
 SELECT task_tracker_assign_task(1, 1, 'SELECT 1');
+
+-- monitor user can call monitoring functions
+SELECT true FROM get_all_active_transactions();
+SELECT true FROM get_global_active_transactions();
 
 -- check read permission
 SET ROLE read_access;
@@ -182,6 +191,10 @@ SELECT create_intermediate_result('topten', 'SELECT count(*) FROM test');
 ABORT;
 
 SELECT * FROM citus_stat_statements_reset();
+
+-- regular users cannot call monitoring functions
+SELECT true FROM get_all_active_transactions();
+SELECT true FROM get_global_active_transactions();
 
 -- should not be allowed to upgrade to reference table
 SELECT upgrade_to_reference_table('singleshard');
